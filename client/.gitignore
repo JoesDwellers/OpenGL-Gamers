@@ -1,0 +1,12 @@
+*dll
+*obj
+*pdb
+
+
+include/glad/*
+include/GLFW/*
+include/glm/*
+include/KHR/*
+
+lib/*
+build/*
