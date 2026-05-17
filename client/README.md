@@ -8,24 +8,24 @@ adding them to the project, I have attached instructions on how to add them your
 
 At the end, the folder structure should look like this:
 
-client
-    - .vscode
-    - build
-    - include
-        - glad
-            -glad.h
-        - GLFW
-            - glfw3.h
-            - glfw3native.h
-        - glm
-            - all of glms stuff (its a lot)
-        - KHR
-            - khrplatform.h
-        - Other headers we create.
-    - lib
-        - glfw3.lib
-    - src
-        - glad.c
-        - Other source code we create.
-    - glfw3.dll
+client  
+&emsp;- .vscode  
+&emsp;- build  
+&emsp;- include  
+&emsp;&emsp;- glad  
+&emsp;&emsp;&emsp;-glad.h  
+&emsp;&emsp;- GLFW  
+&emsp;&emsp;&emsp;- glfw3.h  
+&emsp;&emsp;&emsp;- glfw3native.h  
+&emsp;&emsp;- glm  
+&emsp;&emsp;&emsp;- all of glms stuff (its a lot)  
+&emsp;&emsp;- KHR  
+&emsp;&emsp;&emsp;- khrplatform.h  
+&emsp;&emsp;- Other headers we create.  
+&emsp;- lib  
+&emsp;&emsp;- glfw3.lib  
+&emsp;- src  
+&emsp;&emsp;- glad.c  
+&emsp;&emsp;- Other source code we create.  
+&emsp;- glfw3.dll  
 
