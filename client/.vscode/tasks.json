@@ -5,6 +5,7 @@
             "label": "C/C++: cl.exe build active file",
             "command": "cl.exe",
             "args": [
+                "/std:c++17",
                 "/Zi",
                 "/EHsc",
                 "/nologo",
@@ -13,13 +14,13 @@
                 "glad.c",
                 "/Fe${workspaceFolder}\\build\\${fileBasenameNoExtension}.exe",
                 "/I${workspaceFolder}\\include",
+                "/IC:\\Tools",
                 "/link",
                 "/LIBPATH:${workspaceFolder}\\lib", "glfw3.lib",
                 "opengl32.lib",
                 "user32.lib",
                 "gdi32.lib",
                 "shell32.lib"
-                
             ],
             "options": {
                 "cwd": "${fileDirname}"
