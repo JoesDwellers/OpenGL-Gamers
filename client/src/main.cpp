@@ -51,10 +51,10 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         case GLFW_KEY_ESCAPE :
             glfwSetWindowShouldClose(window, true);
             break;
-        case GLFW_KEY_KP_ADD :
+        case GLFW_KEY_UP :
             modifier += 1;
             break;
-        case GLFW_KEY_KP_SUBTRACT :
+        case GLFW_KEY_DOWN :
             modifier -= 1;
             break;
         default :
@@ -86,15 +86,29 @@ GLFWwindow* Init() {
     return window;
 }
 
+struct Vertex {
+    glm::vec3 pos;
+    glm::vec3 color;
+};
+
+struct Triangle {
+    Vertex corners[3];
+};
+
+
 int main() {
 
     GLFWwindow* window = Init();
 
-    glm::mat3 vertices = glm::mat3(
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.0f,  0.5f, 0.0f
-    );
+
+    Triangle t1;
+    t1.corners[0].pos = glm::vec3(-0.5f, -0.5f, 0.0f);
+    t1.corners[1].pos = glm::vec3(0.5f, -0.0f, 0.0f);
+    t1.corners[2].pos = glm::vec3(0.0f, 0.5f, 0.0f);
+    t1.corners[0].color = glm::vec3(1.0f, 0.0f, 0.0f);
+    t1.corners[1].color = glm::vec3(0.0f, 1.0f, 0.0f);
+    t1.corners[2].color = glm::vec3(0.0f, 0.0f, 1.0f);
+
     
     // Needed to do stuff idk
     unsigned int VAO;
@@ -103,21 +117,23 @@ int main() {
 
     unsigned int VBO;
     glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(t1), &t1, GL_STATIC_DRAW);
+    
     
     
     // CREATING VERTEX SHADER /////////////////////////////////
     unsigned int vertexShader;
     vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    char* vertexShaderSource;
+    std::string tempString;
+    const char* vertexShaderSource;
     
     std::ifstream vertFile("shaders/vertex.glsl");
     if (vertFile.is_open()) {
-        vertFile.seekg(0, std::ios::end);
-        std::streamsize fileSize = vertFile.tellg();
-        vertFile.seekg(0, std::ios::beg);
-        vertexShaderSource = new char[fileSize + 1];
-        vertFile.read(vertexShaderSource, fileSize);
-        vertexShaderSource[fileSize] = '\0';
+        std::stringstream buff;
+        buff << vertFile.rdbuf();
+        tempString = buff.str();
+        vertexShaderSource = tempString.c_str();
     } else {
         cerr << "Failed to open shader file" << endl;
         exit(-1);
@@ -134,23 +150,21 @@ int main() {
     if (!success) {
         glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
         cerr << "Error with Compiling vertex shader: " << infoLog << endl;
+        glfwTerminate();
         exit(-1);
     }
     
     // CREATING FRAGMENT SHADER /////////////////////////////////
     unsigned int fragmentShader;
     fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    char* fragFileSource;
+    const char* fragFileSource;
     
     std::ifstream fragFile("shaders/fragment.glsl");
     if (fragFile.is_open()) {
-        fragFile.seekg(0, std::ios::end);
-        std::streamsize fileSize = fragFile.tellg();
-        fragFile.seekg(0, std::ios::beg);
-        fragFileSource = new char[fileSize + 1];
-        fragFile.read(fragFileSource, fileSize);
-        fragFileSource[fileSize] = '\0';
-        
+        std::stringstream buff;
+        buff << fragFile.rdbuf();
+        tempString = buff.str();
+        fragFileSource = tempString.c_str();
     } else {
         cerr << "Failed to open fragment file" << endl;
         exit(-1);
@@ -179,40 +193,43 @@ int main() {
         cerr << "Error with Compiling shader program: " << infoLog << endl;
         exit(-1);    
     }
+
+    glUseProgram(shaderProgram);
     
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
     
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat3), glm::value_ptr(vertices), GL_STATIC_DRAW);
     
     // Linking Vertex attributes (Describing how OpenGL reads from our vertices buffer)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    GLint rotationVal = 0;
-    GLint rotationLoc = glGetUniformLocation(shaderProgram, "rotation");
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(sizeof(glm::vec3)));
+    glEnableVertexAttribArray(1);
 
+    GLfloat rotationVal = 0.0f;
+    GLint rotationLoc = glGetUniformLocation(shaderProgram, "rotation");
+    modifier = 0;
 
     while (!glfwWindowShouldClose(window)) {
-        glUseProgram(shaderProgram);
-        glBindVertexArray(VAO);
         
+        
+        
+        
+        glBindVertexArray(VAO);
         glClear(GL_COLOR_BUFFER_BIT);
-        rotationVal++;
-        glUniform1i(rotationLoc, rotationVal);
+        rotationVal += (modifier * .00001f);
+        glUniform1f(rotationLoc, rotationVal);
         
         glDrawArrays(GL_TRIANGLES, 0, 3);
         
 
-        Sleep(100);
+        
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
     glfwTerminate();
-    delete[] vertexShaderSource;
-    delete[] fragFileSource;
     return 0;
 }
