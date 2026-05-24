@@ -6,6 +6,7 @@
 #include <boost/asio.hpp>
 #include <iostream>
 #include <thread>
+#include <fstream>
 
 
 using boost::asio::ip::tcp;
@@ -44,45 +45,153 @@ void chat_client(const std::string& server_ip) {
 }
 
 
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+    }
+}
+
+GLFWwindow* Init() {
+    
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    
+
+    GLFWwindow* window = glfwCreateWindow(800, 600, "Game", NULL, NULL);
+    if (window == NULL) {
+        std::cout << "Failed to create GLFW window" << std::endl;
+        glfwTerminate();
+        exit(-1);
+    }
+    glfwSetKeyCallback(window, keyCallback);
+    glfwMakeContextCurrent(window);
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        std::cout << "Failed to initialize GLAD" << std::endl;
+        exit(-1);
+    }   
+    return window;
+}
 
 int main() {
+
+    GLFWwindow* window = Init();
+
+    glm::mat3 vertices = glm::mat3(
+        -0.5f, -0.5f, 0.0f,
+         0.5f, -0.5f, 0.0f,
+         0.0f,  0.5f, 0.0f
+    );
+
+    // Needed to do stuff idk
+    unsigned int VAO;
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
+
+    unsigned int VBO;
+    glGenBuffers(1, &VBO);
     
-    std::string server_ip;
-    cout << "Enter server IP: ";
-    cin >> server_ip;
-    cin.ignore();
-    chat_client(server_ip);
-    return 0;
     
+    // CREATING VERTEX SHADER /////////////////////////////////
+    unsigned int vertexShader;
+    vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    char* vertexShaderSource;
     
+    std::ifstream vertFile("shaders/vertex.glsl");
+    if (vertFile.is_open()) {
+        vertFile.seekg(0, std::ios::end);
+        std::streamsize fileSize = vertFile.tellg();
+        vertFile.seekg(0, std::ios::beg);
+        vertexShaderSource = new char[fileSize + 1];
+        vertFile.read(vertexShaderSource, fileSize);
+        vertexShaderSource[fileSize] = '\0';
+    } else {
+        cerr << "Failed to open shader file" << endl;
+        exit(-1);
+    }
+
     
-    // glfwInit();
-    // glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    // glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 
-    // GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL", NULL, NULL);
-    // if (window == NULL) {
-    //     std::cout << "Failed to create GLFW window" << std::endl;
-    //     glfwTerminate();
-    //     return -1;
-    // }
-    // glfwMakeContextCurrent(window);
-
-    // if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-    //     std::cout << "Failed to initialize GLAD" << std::endl;
-    //     return -1;
-    // }
-
-    // while (!glfwWindowShouldClose(window)) {
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);       
+    int success;
+    char infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        cerr << "Error with Compiling vertex shader: " << infoLog << endl;
+        exit(-1);
+    }
+    
+    // CREATING FRAGMENT SHADER /////////////////////////////////
+    unsigned int fragmentShader;
+    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    char* fragFileSource;
+    
+    std::ifstream fragFile("shaders/fragment.glsl");
+    if (fragFile.is_open()) {
+        fragFile.seekg(0, std::ios::end);
+        std::streamsize fileSize = fragFile.tellg();
+        fragFile.seekg(0, std::ios::beg);
+        fragFileSource = new char[fileSize + 1];
+        fragFile.read(fragFileSource, fileSize);
+        fragFileSource[fileSize] = '\0';
         
-    //     glClear(GL_COLOR_BUFFER_BIT);
+    } else {
+        cerr << "Failed to open fragment file" << endl;
+        exit(-1);
+    }
 
-    //     glfwSwapBuffers(window);
-    //     glfwPollEvents();
-    // }
+    glShaderSource(fragmentShader, 1, &fragFileSource, NULL);
+    glCompileShader(fragmentShader);       
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        cerr << "Error with Compiling vertex shader: " << infoLog << endl;
+        exit(-1);
+    }
 
-    // glfwTerminate();
+
+    // CREATING SHADER PROGRAM //////////////////////////
+    unsigned int shaderProgram;
+    shaderProgram = glCreateProgram();
+
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        cerr << "Error with Compiling shader program: " << infoLog << endl;
+        exit(-1);    
+    }
+    
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat3), glm::value_ptr(vertices), GL_STATIC_DRAW);
+    
+    // Linking Vertex attributes (Describing how OpenGL reads from our vertices buffer)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+
+
+    while (!glfwWindowShouldClose(window)) {
+        
+        glUseProgram(shaderProgram);
+        glBindVertexArray(VAO);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        //glClear(GL_COLOR_BUFFER_BIT);
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    glfwTerminate();
     return 0;
 }
