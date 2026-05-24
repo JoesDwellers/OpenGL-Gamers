@@ -44,11 +44,23 @@ void chat_client(const std::string& server_ip) {
     }
 }
 
-
+GLint modifier;
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, true);
+    if (action != GLFW_PRESS) return;
+    switch (key) {
+        case GLFW_KEY_ESCAPE :
+            glfwSetWindowShouldClose(window, true);
+            break;
+        case GLFW_KEY_KP_ADD :
+            modifier += 1;
+            break;
+        case GLFW_KEY_KP_SUBTRACT :
+            modifier -= 1;
+            break;
+        default :
+            break;
     }
+    return;
 }
 
 GLFWwindow* Init() {
@@ -83,7 +95,7 @@ int main() {
          0.5f, -0.5f, 0.0f,
          0.0f,  0.5f, 0.0f
     );
-
+    
     // Needed to do stuff idk
     unsigned int VAO;
     glGenVertexArrays(1, &VAO);
@@ -146,10 +158,10 @@ int main() {
 
     glShaderSource(fragmentShader, 1, &fragFileSource, NULL);
     glCompileShader(fragmentShader);       
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
     if (!success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        cerr << "Error with Compiling vertex shader: " << infoLog << endl;
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        cerr << "Error with Compiling fragment shader: " << infoLog << endl;
         exit(-1);
     }
 
@@ -179,19 +191,28 @@ int main() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
+    GLint rotationVal = 0;
+    GLint rotationLoc = glGetUniformLocation(shaderProgram, "rotation");
 
 
     while (!glfwWindowShouldClose(window)) {
-        
         glUseProgram(shaderProgram);
         glBindVertexArray(VAO);
+        
+        glClear(GL_COLOR_BUFFER_BIT);
+        rotationVal++;
+        glUniform1i(rotationLoc, rotationVal);
+        
         glDrawArrays(GL_TRIANGLES, 0, 3);
-        //glClear(GL_COLOR_BUFFER_BIT);
+        
 
+        Sleep(100);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
     glfwTerminate();
+    delete[] vertexShaderSource;
+    delete[] fragFileSource;
     return 0;
 }
